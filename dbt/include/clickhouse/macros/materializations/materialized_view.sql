@@ -70,8 +70,8 @@
   If the view has no `with` clause, add one before the query.
 -#}
 {% macro clickhouse__add_ctes_to_view_sql(view_sql, ctes_sql) %}
-  {#- the `with` keyword can follow white space and `--` comments -#}
-  {%- set with_match = modules.re.match('((?:\\s|--[^\\n]*(?:\\n|$))*with(?:\\s+recursive)?)\\s', view_sql, modules.re.IGNORECASE) -%}
+  {#- the `with` keyword can follow white space and `--`, `#` and `/* */` comments -#}
+  {%- set with_match = modules.re.match('(?s)((?:\\s|--[^\\n]*(?:\\n|$)|#[^\\n]*(?:\\n|$)|/\\*.*?\\*/)*with(?:\\s+recursive)?)\\s', view_sql, modules.re.IGNORECASE) -%}
   {%- if with_match -%}
     {%- set with_clause = with_match.group(1) -%}
     {{ return(with_clause ~ ' ' ~ ctes_sql | trim ~ ',' ~ view_sql[with_clause | length:]) }}

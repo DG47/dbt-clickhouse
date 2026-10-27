@@ -1,3 +1,5 @@
+import pytest
+
 MULTIPLE_MV_SQL = """
 --mv1:begin
 select id, name from people where department = 'engineering'
@@ -174,6 +176,26 @@ select id from sellers
 
         assert self._call(macros, sql)['mv2'] == (
             f'\n-- sales only\nWITH{EPHEMERAL_CTE},'
+            " sellers as (select id from __dbt__cte__staged where department = 'sales')\n"
+            'select id from sellers\n'
+        )
+
+    @pytest.mark.parametrize('comment', ['/* sales only */', '/* sales\n only */', '# sales only'])
+    def test_cte_is_added_to_with_clause_after_other_comments(self, macros, comment):
+        sql = f"""
+with{EPHEMERAL_CTE} --mv1:begin
+select id from __dbt__cte__staged
+--mv1:end
+union all
+--mv2:begin
+{comment}
+WITH sellers as (select id from __dbt__cte__staged where department = 'sales')
+select id from sellers
+--mv2:end
+"""
+
+        assert self._call(macros, sql)['mv2'] == (
+            f'\n{comment}\nWITH{EPHEMERAL_CTE},'
             " sellers as (select id from __dbt__cte__staged where department = 'sales')\n"
             'select id from sellers\n'
         )
