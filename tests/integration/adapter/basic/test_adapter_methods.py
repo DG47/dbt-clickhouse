@@ -16,8 +16,9 @@ class TestBaseCaching(BaseAdapterMethod):
 # check_schema_exists is only reachable from Jinja; both dbt Core 1.x (through
 # SQLAdapter) and dbt Core v2 dispatch it to clickhouse__check_schema_exists.
 assert_schema_exists_macro = """
-{% macro assert_schema_exists(schema, expected) %}
-  {% set exists = adapter.check_schema_exists(target.database, schema) %}
+{% macro assert_schema_exists(schema, expected, database=none) %}
+  {% set database = target.database if database is none else database %}
+  {% set exists = adapter.check_schema_exists(database, schema) %}
   {% if exists != expected %}
     {{ exceptions.raise_compiler_error(
         "check_schema_exists(" ~ schema ~ ") returned " ~ exists ~ ", expected " ~ expected) }}
@@ -37,4 +38,16 @@ class TestCheckSchemaExists:
             (f"{project.test_schema}_missing", False),
         ):
             args = json.dumps({"schema": schema, "expected": expected})
+            run_dbt(["run-operation", "assert_schema_exists", "--args", args])
+
+    def test_check_schema_exists_ignores_database(self, project):
+        # ClickHouse has no level above the schema. Callers such as packages that
+        # pass a database of their own must get an answer, not a relation error.
+        for schema, expected in (
+            (project.test_schema, True),
+            (f"{project.test_schema}_missing", False),
+        ):
+            args = json.dumps(
+                {"schema": schema, "expected": expected, "database": f"{schema}_other"}
+            )
             run_dbt(["run-operation", "assert_schema_exists", "--args", args])

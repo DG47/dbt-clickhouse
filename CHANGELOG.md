@@ -2,6 +2,7 @@
 
 #### Bugs
 * A `primary_key` config that is only whitespace, as a string or as list entries, is now trimmed and treated as unset instead of rendering an invalid `PRIMARY KEY` clause ([#832](https://github.com/ClickHouse/dbt-clickhouse/pull/832)).
+* Fix `adapter.check_schema_exists(database, schema)` raising `Cannot set database` since 1.10.4 when `database` differs from `schema`, which broke packages such as Elementary. `database` is ignored again, as in 1.10.3 ([#TBD](https://github.com/ClickHouse/dbt-clickhouse/pull/TBD)).
 
 ### Release [1.10.4], 2026-11-24
 

@@ -359,6 +359,12 @@ class ClickHouseAdapter(SQLAdapter):
 
         return f"s3('{url}'{access}, '{fmt}'{struct}{comp}{extra_credentials})"
 
+    def check_schema_exists(self, database: str, schema: str) -> bool:
+        # ClickHouse has no level above the schema, so `database` is ignored, as in
+        # `list_schemas`. Passing it on would fail to build a relation when it differs
+        # from the schema.
+        return super().check_schema_exists('', schema)
+
     def drop_schema(self, relation: BaseRelation) -> None:
         super().drop_schema(relation)
         conn = self.connections.get_if_exists()
